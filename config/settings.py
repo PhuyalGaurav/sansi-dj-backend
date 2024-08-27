@@ -147,3 +147,5 @@ REST_FRAMEWORK = {
     'JWT_AUTH_COOKIE': 'jwt-auth',
     'JWT_AUTH_REFRESH_COOKIE': 'jwt-refresh',
 }
+
+AUTH_USER_MODEL = "accounts.CustomUser"
