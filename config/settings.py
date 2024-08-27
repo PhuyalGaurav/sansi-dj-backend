@@ -24,6 +24,7 @@ ALLOWED_HOSTS = []
 SITE_ID = 1
 
 INSTALLED_APPS = [
+    # Django defaults
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,6 +32,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+
+
+    # Local apps
+    'accounts.apps.AccountsConfig',
 
     # Third-party apps
     'rest_framework',
@@ -102,6 +107,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = env.str("emailHost", default="smtp.example.com")
+EMAIL_PORT = env.int("emailPort", default=587)
+EMAIL_USE_TLS = env.bool("emailUseTls", default=True)
+EMAIL_USE_SSL = env.bool("emailUseSsl", default=False)
+EMAIL_HOST_USER = env.str("emailHostUser")
+EMAIL_HOST_PASSWORD = env.str(
+    "emailHostPassword", default="your-email-password")
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
