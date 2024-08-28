@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import CustomUser, UserFollowing
+from .models import CustomUser, UserFollowing, Achievement, Profile
 
 
 class CustomUserAdmin(UserAdmin):
@@ -29,5 +29,18 @@ class CustomUserAdmin(UserAdmin):
     ordering = ("email",)
 
 
+class ProfileAdmin(admin.ModelAdmin):
+    model = Profile
+    list_display = ("user", "bio", "location",
+                    "birth_date", "display_achievements")
+    search_fields = ("user__username", "bio", "location", "birth_date")
+
+    def display_achievements(self, obj):
+        return ", ".join([achievement.title for achievement in obj.Achievement.all()])
+    display_achievements.short_description = 'Achievements'
+
+
 admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(Profile, ProfileAdmin)
 admin.site.register(UserFollowing)
+admin.site.register(Achievement)
