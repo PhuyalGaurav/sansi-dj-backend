@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'accounts.apps.AccountsConfig',
+    'core.apps.CoreConfig',
 
     # Third-party apps
     'rest_framework',
@@ -128,6 +129,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+# STATICFILES_STORAGE = "storages.backends.s3.S3Storage"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
