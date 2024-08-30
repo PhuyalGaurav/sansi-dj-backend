@@ -13,4 +13,5 @@ urlpatterns = [
     path('rest-auth/registration/', include('dj_rest_auth.registration.urls')),
     path('dj-rest-auth/google/', GoogleLogin.as_view(), name='google_login'),
     path('profile/', include('accounts.urls')),
+    path('devtest/', include('devtest.urls')),
 ]
