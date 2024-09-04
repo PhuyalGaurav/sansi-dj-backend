@@ -1,10 +1,6 @@
-"""
-
-Django settings for config project.
-
-"""
 from environs import Env
 from pathlib import Path
+import os
 
 # Load environment variables
 env = Env()
@@ -19,7 +15,6 @@ DEBUG = env.bool("debug", default=False)
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 SITE_ID = 1
 
@@ -33,7 +28,6 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.staticfiles',
 
-
     # Local apps
     'accounts.apps.AccountsConfig',
     'core.apps.CoreConfig',
@@ -41,7 +35,7 @@ INSTALLED_APPS = [
 
     # Third-party apps
     'rest_framework',
-
+    'storages',
     # Auth apps
     'corsheaders',
     'rest_framework.authtoken',
@@ -51,7 +45,6 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'storages',
 
 ]
 
@@ -87,12 +80,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
 # Database
 DATABASES = {
     'default': env.dj_db_url("databaseURL")
 }
-
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -149,21 +140,31 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles', 'static')
+MEDIA_URLS = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# S3 Configuration
-
-AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME")
+# AWS S3 settings for media files
 AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = env.str("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = env.str("AWS_S3_REGION_NAME")
-AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-
-AWS_S3_URL_PROTOCOL = 'https'
-AWS_S3_USE_SSL = True
+AWS_S3_SIGNATURE_NAME = 's3v4'
+AWS_DEFAULT_ACL = None
 AWS_S3_VERIFY = True
 
-STATIC_URL = f'{AWS_S3_URL_PROTOCOL}://{AWS_S3_CUSTOM_DOMAIN}/static/'
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-MEDIA_URL = f'{AWS_S3_URL_PROTOCOL}://{AWS_S3_CUSTOM_DOMAIN}/media/'
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+
+STORAGES = {
+    # Media file (image) management
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "LOCATION": STATIC_ROOT,
+    },
+}
