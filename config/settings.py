@@ -17,6 +17,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 SITE_ID = 1
+APPEND_SLASH = False
 
 INSTALLED_APPS = [
     # Django defaults
@@ -27,10 +28,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+    'django.contrib.flatpages',
 
     # Local apps
     'accounts.apps.AccountsConfig',
-    'core.apps.CoreConfig',
+    'clusters.apps.ClustersConfig',
     'devtest.apps.DevtestConfig',
 
     # Third-party apps
@@ -103,9 +105,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env.str("emailHost", default="smtp.example.com")
-EMAIL_PORT = env.int("emailPort", default=587)
-EMAIL_USE_TLS = env.bool("emailUseTls", default=True)
-EMAIL_USE_SSL = env.bool("emailUseSsl", default=False)
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 EMAIL_HOST_USER = env.str("emailHostUser")
 EMAIL_HOST_PASSWORD = env.str(
     "emailHostPassword", default="your-email-password")
@@ -143,7 +145,7 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles', 'static')
-MEDIA_URLS = '/media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # AWS S3 settings for media files

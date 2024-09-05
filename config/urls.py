@@ -20,3 +20,9 @@ urlpatterns = [
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+# Catch-all pattern should be last
+urlpatterns += [
+    path('', include('django.contrib.flatpages.urls')),
+]
