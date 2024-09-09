@@ -32,7 +32,8 @@ INSTALLED_APPS = [
 
     # Local apps
     'accounts.apps.AccountsConfig',
-    'clusters.apps.ClustersConfig',
+    'cards.apps.CardsConfig',
+    'core.apps.CoreConfig',
     'devtest.apps.DevtestConfig',
 
     # Third-party apps

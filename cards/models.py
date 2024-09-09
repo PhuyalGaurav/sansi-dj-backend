@@ -48,7 +48,7 @@ class Answer(models.Model):
 
 class Card(models.Model):
     question = models.OneToOneField(Question, on_delete=models.CASCADE)
-    answer = models.OneToOneField(Answer, on_delete=models.CASCADE)
+    answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
     default_difficulty = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(10)]
     )
