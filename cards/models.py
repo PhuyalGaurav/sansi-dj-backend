@@ -68,6 +68,7 @@ class UserCard(models.Model):
     )
     first_show = models.DateTimeField()
     next_show = models.DateTimeField(blank=True, null=True)
+    tag = models.ManyToManyField('Tag')
 
     # TODO: Add algorithm to calculate net_user_answer_rating
     net_user_answer_rating = models.PositiveSmallIntegerField(
@@ -85,8 +86,34 @@ class UserCard(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=255)
-    cards = models.ManyToManyField(Card, related_name='tags')
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    color = models.CharField(max_length=7, default='#007bff')
 
     def __str__(self):
         return self.name
+
+
+class Deck(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    cards = models.ManyToManyField(UserCard)
+    is_public = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    tags = models.ManyToManyField('Tag')
+
+    def clean(self):
+        if self.cards.count() < 3:
+            raise ValidationError('A deck must contain at least 3 cards.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def card_count(self):
+        return self.cards.count()
+
+    def __str__(self):
+        return self.title
