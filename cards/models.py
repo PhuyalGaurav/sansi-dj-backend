@@ -59,6 +59,7 @@ class Card(models.Model):
         return self.question.title
 
 
+# TODO: Figure out how to implement spaced repetition algorithm
 class UserCard(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     card = models.ForeignKey(Card, on_delete=models.CASCADE)
@@ -66,8 +67,6 @@ class UserCard(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         default=5
     )
-    first_show = models.DateTimeField()
-    next_show = models.DateTimeField(blank=True, null=True)
     tag = models.ManyToManyField('Tag')
 
     # TODO: Add algorithm to calculate net_user_answer_rating
@@ -75,11 +74,6 @@ class UserCard(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
     is_private = models.BooleanField(default=True)
-
-    def save(self, *args, **kwargs):
-        if self.first_show and not self.next_show:
-            self.next_show = self.first_show + timedelta(days=2)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.user.username} - {self.card.question.title}'
@@ -116,6 +110,7 @@ class Deck(models.Model):
         return self.title
 
 
+# TODO: Figure out how to implement spaced repetition algorithm
 class UserDeck(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     deck = models.ForeignKey(Deck, on_delete=models.CASCADE)
@@ -124,8 +119,6 @@ class UserDeck(models.Model):
         default=5
     )
     is_private = models.BooleanField(default=True)
-    first_show = models.DateTimeField()
-    next_show = models.DateTimeField(blank=True, null=True)
     tag = models.ManyToManyField('Tag')
 
     def __str__(self):
