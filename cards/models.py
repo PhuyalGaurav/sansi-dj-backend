@@ -95,14 +95,11 @@ class Tag(models.Model):
 
 
 class Deck(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     cards = models.ManyToManyField(UserCard)
-    is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    tags = models.ManyToManyField('Tag')
 
     def clean(self):
         if self.cards.count() < 3:
@@ -117,3 +114,67 @@ class Deck(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class UserDeck(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE)
+    difficulty = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        default=5
+    )
+    is_private = models.BooleanField(default=True)
+    first_show = models.DateTimeField()
+    next_show = models.DateTimeField(blank=True, null=True)
+    tag = models.ManyToManyField('Tag')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.deck.title}'
+
+
+class Topic(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    Deck = models.ManyToManyField(Deck)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class UserTopic(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
+    difficulty = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        default=5
+    )
+    is_private = models.BooleanField(default=True)
+    tag = models.ManyToManyField('Tag')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.topic.name}'
+
+
+class Course(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    topics = models.ManyToManyField(Topic)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class UserCourse(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    difficulty = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        default=5
+    )
+    is_private = models.BooleanField(default=True)
+    tag = models.ManyToManyField('Tag')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.course.title}'
