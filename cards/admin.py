@@ -3,12 +3,11 @@ from .models import Question, Answer, Card, UserCard, Tag, Deck, UserDeck, Topic
 
 
 class UserCardAdmin(admin.ModelAdmin):
-    list_display = ('user', 'difficulty',
-                    'next_show', 'net_user_answer_rating')
+    list_display = ('user', 'difficulty', 'net_user_answer_rating')
 
 
 class UserDeckAdmin(admin.ModelAdmin):
-    list_display = ('user', 'deck', 'next_show')
+    list_display = ('user', 'deck')
 
 
 class UserTopicAdmin(admin.ModelAdmin):
