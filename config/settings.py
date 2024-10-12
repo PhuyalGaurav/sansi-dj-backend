@@ -105,13 +105,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = env.str("emailHost", default="smtp.example.com")
+EMAIL_HOST = env.str("emailHost")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER = env.str("emailHostUser")
-EMAIL_HOST_PASSWORD = env.str(
-    "emailHostPassword", default="your-email-password")
+EMAIL_HOST_PASSWORD = env.str("emailHostPassword")
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
