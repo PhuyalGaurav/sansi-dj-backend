@@ -1,5 +1,6 @@
 from environs import Env
 from pathlib import Path
+from datetime import timedelta
 import os
 
 # Load environment variables
@@ -125,15 +126,9 @@ USE_TZ = True
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-GOOGLE_SECRETS = {
-    "client_id": env.str("googleClientId"),
-    "client_secret": env.str("googleClientSecret"),
-    "redirect_url": env.str("googleRedirectUri"),
-}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
         'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
     ),
     'USE_JWT': True,
@@ -170,4 +165,53 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
         "LOCATION": STATIC_ROOT,
     },
+}
+# django-cors-headers
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000/",
+    ]
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+}
+
+REST_AUTH = {
+    "USE_JWT": True,
+    "JWT_AUTH_COOKIE": "_auth",
+    "JWT_AUTH_REFRESH_COOKIE": "_refresh",
+    "JWT_AUTH_HTTPONLY": False,
+}
+
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
+
+GOOGLE_OAUTH_CLIENT_ID = env.str("googleClientId")
+GOOGLE_OAUTH_CLIENT_SECRET = env.str("googleClientSecret")
+GOOGLE_OAUTH_CALLBACK_URL = env.str("googleRedirectUri")
+
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APPS": [
+            {
+                "client_id": GOOGLE_OAUTH_CLIENT_ID,
+                "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+                "key": "",
+            },
+        ],
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {
+            "access_type": "online",
+        },
+    }
 }
