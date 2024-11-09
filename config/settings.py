@@ -33,7 +33,6 @@ INSTALLED_APPS = [
 
     # Local apps
     'accounts.apps.AccountsConfig',
-    'cards.apps.CardsConfig',
     'core.apps.CoreConfig',
     'devtest.apps.DevtestConfig',
 
@@ -175,8 +174,10 @@ else:
         "http://localhost:3000/",
     ]
 
+
+# changed access token lifetime to 1 year for testing purposes
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=365),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
