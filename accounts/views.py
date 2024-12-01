@@ -1,9 +1,9 @@
 from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser, IsAuthenticated
 from . import models
-from .serializers import FollowingSerializer, UserSerializer
+from .serializers import UserSerializer, UserProfileSerializer, UserFollowingSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -21,33 +21,79 @@ import jwt
 from jwt.exceptions import ImmatureSignatureError
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from rest_framework_simplejwt.tokens import RefreshToken
+from .permissions import IsOwnerOrReadOnly
+from .models import CustomUser, Profile, UserFollowing
+
 
 User = get_user_model()
 
 
+class ListUsersView(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = UserProfileSerializer
+    lookup_field = 'username'
+
+    def get_permissions(self):
+        if self.action in ['retrieve', 'list']:
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+        return [permission() for permission in permission_classes]
+
+    def get_object(self):
+        username = self.kwargs.get("username")
+        user = get_object_or_404(User, username=username)
+        return get_object_or_404(Profile, user=user)
+
+    def update(self, request, *args, **kwargs):
+        self.check_object_permissions(request, self.get_object())
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        self.check_object_permissions(request, self.get_object())
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+
 class UserFollowingViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticatedOrReadOnly,)
-    serializer_class = FollowingSerializer
-    queryset = models.UserFollowing.objects.all()
+    queryset = UserFollowing.objects.all()
+    serializer_class = UserFollowingSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_followers(self, request, user_id=None):
-        user = get_object_or_404(User, id=user_id)
-        followers = user.followers.all()
-        serializer = self.get_serializer(followers, many=True)
-        return Response(serializer.data)
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        following_username = request.data.get('username')
+        if user.username == following_username:
+            return Response({"error": "You cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        following_user = get_object_or_404(User, username=following_username)
+        if UserFollowing.objects.filter(user_id=user.id, following_user_id=following_user.id).exists():
+            return Response({"error": "You are already following this user."}, status=status.HTTP_400_BAD_REQUEST)
+        data = {'user_id': user.id, 'following_user_id': following_user.id}
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get_following(self, request, user_id=None):
-        user = get_object_or_404(User, id=user_id)
-        following = user.following.all()
-        serializer = self.get_serializer(following, many=True)
-        return Response(serializer.data)
-
-
-class UserInfoAPIView(APIView):
-    def get(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        following_username = request.data.get('username')
+        following_user = get_object_or_404(User, username=following_username)
+        following_instance = get_object_or_404(
+            UserFollowing, user_id=user.id, following_user_id=following_user.id)
+        following_instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class GoogleLogin(SocialLoginView):
@@ -125,8 +171,24 @@ class GoogleLoginCallback(APIView):
         if not email:
             return Response({"error": "No email found in user info"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user, created = User.objects.get_or_create(
-            email=email, defaults={"username": email})
+        user, created = CustomUser.objects.get_or_create(
+            email=email, defaults={"username": email.split('@')[0]})
+
+        if created:
+            Profile.objects.create(
+                user=user,
+                name=user_info.get('name', ''),
+                given_name=user_info.get('given_name', ''),
+                family_name=user_info.get('family_name', ''),
+                picture=user_info.get('picture', '')
+            )
+        else:
+            profile = user.profile
+            profile.name = user_info.get('name', '')
+            profile.given_name = user_info.get('given_name', '')
+            profile.family_name = user_info.get('family_name', '')
+            profile.picture = user_info.get('picture', '')
+            profile.save()
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
