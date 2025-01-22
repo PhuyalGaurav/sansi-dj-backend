@@ -1,14 +1,14 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser, IsAuthenticated
-from . import models
-from .serializers import UserSerializer, UserProfileSerializer, UserFollowingSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from urllib.parse import urljoin
 import requests
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -18,14 +18,57 @@ from django.views import View
 from rest_framework import status
 from rest_framework.response import Response
 import jwt
+import logging
 from jwt.exceptions import ImmatureSignatureError
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from rest_framework_simplejwt.tokens import RefreshToken
 from .permissions import IsOwnerOrReadOnly
 from .models import CustomUser, Profile, UserFollowing
+from dj_rest_auth.registration.views import SocialLoginView
+from django.conf import settings
+from .serializers import UserProfileSerializer, UserSerializer
+from .permissions import IsOwnerOrReadOnly
 
-
+logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+class FollowUnfollowView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, username):
+        if request.user.username == username:
+            return Response({"detail": "You cannot follow/unfollow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user_to_toggle = CustomUser.objects.get(username=username)
+            if request.user.is_following(user_to_toggle):
+                request.user.unfollow(user_to_toggle)
+                return Response({"detail": "Successfully unfollowed the user."}, status=status.HTTP_200_OK)
+            else:
+                request.user.follow(user_to_toggle)
+                return Response({"detail": "Successfully followed the user."}, status=status.HTTP_200_OK)
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class FollowersView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        followers = UserFollowing.objects.filter(
+            following_user_id=user).values_list('user_id__username', flat=True)
+        return Response(list(followers))
+
+
+class FollowingView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        following = UserFollowing.objects.filter(user_id=user).values_list(
+            'following_user_id__username', flat=True)
+        return Response(list(following))
 
 
 class ListUsersView(viewsets.ModelViewSet):
@@ -39,6 +82,10 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     lookup_field = 'username'
 
+    def list(self, request, *args, **kwargs):
+        self.kwargs['username'] = request.user.username
+        return self.retrieve(request, *args, **kwargs)
+
     def get_permissions(self):
         if self.action in ['retrieve', 'list']:
             permission_classes = [IsAuthenticated]
@@ -48,7 +95,10 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     def get_object(self):
         username = self.kwargs.get("username")
-        user = get_object_or_404(User, username=username)
+        if not username:
+            user = self.request.user
+        else:
+            user = get_object_or_404(User, username=username)
         return get_object_or_404(Profile, user=user)
 
     def update(self, request, *args, **kwargs):
@@ -65,35 +115,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(request, self.get_object())
         kwargs['partial'] = True
         return self.update(request, *args, **kwargs)
-
-
-class UserFollowingViewSet(viewsets.ModelViewSet):
-    queryset = UserFollowing.objects.all()
-    serializer_class = UserFollowingSerializer
-    permission_classes = [IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        user = request.user
-        following_username = request.data.get('username')
-        if user.username == following_username:
-            return Response({"error": "You cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
-        following_user = get_object_or_404(User, username=following_username)
-        if UserFollowing.objects.filter(user_id=user.id, following_user_id=following_user.id).exists():
-            return Response({"error": "You are already following this user."}, status=status.HTTP_400_BAD_REQUEST)
-        data = {'user_id': user.id, 'following_user_id': following_user.id}
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def destroy(self, request, *args, **kwargs):
-        user = request.user
-        following_username = request.data.get('username')
-        following_user = get_object_or_404(User, username=following_username)
-        following_instance = get_object_or_404(
-            UserFollowing, user_id=user.id, following_user_id=following_user.id)
-        following_instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class GoogleLogin(SocialLoginView):
@@ -183,7 +204,7 @@ class GoogleLoginCallback(APIView):
                 picture=user_info.get('picture', '')
             )
         else:
-            profile = user.profile
+            profile = Profile.objects.get(user=user)
             profile.name = user_info.get('name', '')
             profile.given_name = user_info.get('given_name', '')
             profile.family_name = user_info.get('family_name', '')

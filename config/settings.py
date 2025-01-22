@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-    'django.contrib.flatpages',
 
     # Local apps
     'accounts.apps.AccountsConfig',
@@ -39,6 +38,8 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'storages',
+    'drf_spectacular',
+    'django_extensions',
     # Auth apps
     'corsheaders',
     'rest_framework.authtoken',
@@ -133,6 +134,14 @@ REST_FRAMEWORK = {
     'USE_JWT': True,
     'JWT_AUTH_COOKIE': 'jwt-auth',
     'JWT_AUTH_REFRESH_COOKIE': 'jwt-refresh',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Sansi',
+    'DESCRIPTION': 'Fuck you bitch ass Nigga',
+    'VERSION': '0.1',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 AUTH_USER_MODEL = "accounts.CustomUser"

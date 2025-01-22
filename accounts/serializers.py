@@ -13,6 +13,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserFollowingSerializer(serializers.ModelSerializer):
+    user_id = UserSerializer()
+    following_user_id = UserSerializer()
+
     class Meta:
         model = UserFollowing
         fields = ["user_id", "following_user_id", "created"]
@@ -30,9 +33,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
                   "name", "given_name", "family_name", "picture", "followers", "following"]
 
     def get_followers(self, obj):
-        followers = UserFollowing.objects.filter(following_user_id=obj.user.id)
-        return UserFollowingSerializer(followers, many=True).data
+        followers = UserFollowing.objects.filter(
+            following_user_id=obj.user).values_list('user_id__username', flat=True)
+        return list(followers)
 
     def get_following(self, obj):
-        following = UserFollowing.objects.filter(user_id=obj.user.id)
-        return UserFollowingSerializer(following, many=True).data
+        following = UserFollowing.objects.filter(user_id=obj.user).values_list(
+            'following_user_id__username', flat=True)
+        return list(following)

@@ -33,6 +33,22 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
+    def follow(self, user):
+        UserFollowing.objects.create(user_id=self, following_user_id=user)
+
+    def unfollow(self, user):
+        UserFollowing.objects.filter(
+            user_id=self, following_user_id=user).delete()
+
+    def is_following(self, user):
+        return UserFollowing.objects.filter(user_id=self, following_user_id=user).exists()
+
+    def followers(self):
+        return CustomUser.objects.filter(following__following_user_id=self)
+
+    def following(self):
+        return CustomUser.objects.filter(followers__user_id=self)
+
 
 User = get_user_model()
 
@@ -54,19 +70,10 @@ class Profile(models.Model):
 
 class UserFollowing(models.Model):
     user_id = models.ForeignKey(
-        User, related_name="following", on_delete=models.CASCADE
-    )
+        CustomUser, related_name='following', on_delete=models.CASCADE)
     following_user_id = models.ForeignKey(
-        User, related_name="followers", on_delete=models.CASCADE
-    )
-    created = models.DateTimeField(auto_now_add=True, db_index=True)
-
-    class Meta:
-        unique_together = ("user_id", "following_user_id")
-        ordering = ["-created"]
-
-    def __str__(self):
-        return f"{self.user_id} follows {self.following_user_id}"
+        CustomUser, related_name='followers', on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
 
 
 class Achievement(models.Model):
